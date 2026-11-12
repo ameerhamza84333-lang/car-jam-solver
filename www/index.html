@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Car Jam Solver: Traffic Jam</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #b3e5fc 0%, #e1f5fe 100%);
+      height: 100dvh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      transition: background 0.5s ease;
+    }
+
+    /* ==================== HOME / LEVEL SELECT SCREEN ==================== */
+    #homeScreen {
+      position: fixed;
+      inset: 0;
+      bottom: 52px;
+      background: linear-gradient(180deg, #1565c0 0%, #42a5f5 48%, #e1f5fe 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 10px;
+      z-index: 50;
+    }
+
+    .home-top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .home-badge {
+      background: rgba(0, 0, 0, 0.28);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .hero-box {
+      text-align: center;
+      margin: 4px 0;
+    }
+    .hero-cars {
+      font-size: 34px;
+      filter: drop-shadow(0 5px 6px rgba(0,0,0,0.3));
+      margin-bottom: 2px;
+    }
+    .hero-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 4px 0 #0d47a1, 0 8px 15px rgba(0,0,0,0.35);
+      line-height: 1.1;
+    }
+    .hero-sub {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fff9c4;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .home-actions {
+      display: flex;
+      gap: 10px;
+      width: 92%;
+      max-width: 340px;
+      justify-content: center;
+      margin: 6px 0;
+    }
+
+    .play-main-btn {
+      flex: 2;
+      padding: 14px 14px;
+      border: 3px solid #fff;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #66bb6a 0%, #2e7d32 100%);
+      color: #fff;
+      font-size: 19px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #1b5e20, 0 10px 18px rgba(0,0,0,0.3);
+      animation: pulsePlay 1.5s infinite;
+    }
+    .play-main-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1b5e20; }
+
+    .redeem-main-btn {
+      flex: 1;
+      padding: 14px 10px;
+      border: 3px solid #fff;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #ffa726 0%, #ef6c00 100%);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #bf360c, 0 10px 18px rgba(0,0,0,0.3);
+    }
+    .redeem-main-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #bf360c; }
+
+    @keyframes pulsePlay {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .levels-panel {
+      width: 100%;
+      max-width: 400px;
+      flex: 1;
+      min-height: 0;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 22px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.2);
+      margin-top: 4px;
+    }
+    .levels-header {
+      font-size: 12px;
+      font-weight: 900;
+      color: #263238;
+      text-align: center;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .levels-grid {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 2px 4px 8px;
+    }
+    .lvl-card {
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .lvl-card.completed {
+      background: linear-gradient(180deg, #81c784 0%, #43a047 100%);
+      color: #fff;
+      box-shadow: 0 4px 0 #2e7d32;
+    }
+    .lvl-card.current {
+      background: linear-gradient(180deg, #ffca28 0%, #ff8f00 100%);
+      color: #fff;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 0 #e65100, 0 0 12px rgba(255, 160, 0, 0.8);
+    }
+    .lvl-card.locked {
+      background: #cfd8dc;
+      color: #78909c;
+      box-shadow: 0 4px 0 #b0bec5;
+      cursor: not-allowed;
+    }
+    .lvl-status { font-size: 10px; margin-top: 2px; }
+
+    /* ==================== GAMEPLAY SCREEN ==================== */
+    #gameScreen {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      height: calc(100dvh - 52px);
+      width: 100%;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%);
+      color: #fff;
+      box-shadow: 0 4px 0 #1b5e20, 0 6px 12px rgba(0,0,0,0.2);
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .hud-left-group { display: flex; gap: 6px; }
+
+    .hud-btn {
+      background: linear-gradient(180deg, #ffffff 0%, #eceff1 100%);
+      border: none;
+      border-radius: 10px;
+      padding: 6px 9px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #b0bec5;
+    }
+    .hud-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b0bec5; }
+
+    .level-box { text-align: center; text-shadow: 0 2px 3px rgba(0,0,0,0.3); }
+    .level-title { font-size: 18px; font-weight: 900; }
+    .level-sub { font-size: 9px; font-weight: 800; opacity: 0.95; text-transform: uppercase; }
+
+    .coin-box {
+      background: linear-gradient(180deg, #fffde7 0%, #fff59d 100%);
+      color: #e65100;
+      padding: 5px 11px;
+      border-radius: 18px;
+      font-weight: 900;
+      font-size: 13px;
+      box-shadow: 0 3px 0 #fbc02d;
+      cursor: pointer;
+    }
+
+    /* 3D PASSENGER STATION & LINE */
+    .queue-area {
+      padding: 5px 8px 7px;
+      text-align: center;
+      background: rgba(255,255,255,0.55);
+      border-bottom: 2px solid rgba(255,255,255,0.7);
+      flex-shrink: 0;
+    }
+    .queue-badge {
+      display: inline-block;
+      background: #263238;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .station-track {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 6px;
+      height: 30px;
+      padding: 0 10px;
+      overflow: hidden;
+    }
+
+    .stickman {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+    }
+    .stickman-head {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #ffe0b2, #ffb74d);
+      border: 1.5px solid #fff;
+      margin-bottom: -2px;
+      z-index: 2;
+    }
+    .stickman-body {
+      width: 14px;
+      height: 15px;
+      border-radius: 6px 6px 4px 4px;
+      border: 1.5px solid rgba(255,255,255,0.85);
+      box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3);
+    }
+    .stickman.front {
+      transform: scale(1.22);
+      animation: hop 0.65s infinite alternate;
+    }
+    @keyframes hop {
+      from { transform: scale(1.2) translateY(0); }
+      to { transform: scale(1.25) translateY(-4px); }
+    }
+
+    /* 3D ASPHALT PARKING ROAD */
+    .parking-road {
+      background: linear-gradient(180deg, #263238 0%, #37474f 50%, #263238 100%);
+      padding: 7px 6px;
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      border-top: 3px solid #cfd8dc;
+      border-bottom: 3px solid #cfd8dc;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    .slot {
+      width: 50px;
+      height: 70px;
+      border: 2px dashed rgba(255,255,255,0.45);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.22);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: rgba(255,255,255,0.55);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .slot.unlock-btn {
+      background: linear-gradient(180deg, #ffca28 0%, #ff8f00 100%);
+      border: 2px solid #fff;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #e65100;
+    }
+
+    /* ==================== REAL 3D CAR & BUS MODELS ==================== */
+    .real-vehicle {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      background: transparent !important;
+      filter: drop-shadow(0 5px 4px rgba(0,0,0,0.35));
+      transition: transform 0.1s ease;
+    }
+    .real-vehicle:active {
+      transform: translateY(3px) scale(0.95);
+    }
+    .real-vehicle svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+    .veh-badge {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.95);
+      font-weight: 900;
+      line-height: 1.05;
+    }
+    .veh-arrow { font-size: 14px; }
+    .veh-cap {
+      font-size: 9px;
+      background: rgba(0,0,0,0.55);
+      padding: 1px 5px;
+      border-radius: 6px;
+      margin-top: 1px;
+    }
+
+    .parked-anim {
+      animation: driveIn 0.22s ease-out;
+      cursor: default;
+    }
+    @keyframes driveIn {
+      from { transform: translateY(35px) scale(0.7); opacity: 0.3; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* TRAFFIC JAM ARENA */
+    .board-wrapper {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 6px 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .jam-board {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-content: center;
+      gap: 8px 10px;
+      max-width: 390px;
+      width: 100%;
+      height: 100%;
+      max-height: 320px;
+      padding: 8px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.45);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .jam-board.CIRCLE { border-radius: 40px; }
+    .jam-board.HEART { border-radius: 28px; background: rgba(255,107,129,0.18); }
+
+    /* BOOSTERS BAR */
+    .boosters {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.78);
+      border-top: 2px solid rgba(255,255,255,0.85);
+      flex-shrink: 0;
+      width: 100%;
+    }
+    .booster-btn {
+      flex: 1;
+      max-width: 110px;
+      background: linear-gradient(180deg, #ffffff 0%, #eceff1 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 6px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 3px 0 #b0bec5, 0 4px 8px rgba(0,0,0,0.12);
+      cursor: pointer;
+    }
+    .booster-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b0bec5; }
+    .booster-icon { font-size: 16px; }
+    .booster-label { font-size: 10px; font-weight: 900; color: #263238; margin-top: 2px; white-space: nowrap; }
+
+    /* ADMOB BANNER SPACER */
+    .admob-banner-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 52px;
+      background: transparent;
+      z-index: 60;
+    }
+
+    /* ==================== COIN REDEEM SHOP MODAL ==================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 20px;
+      width: 100%;
+      max-width: 340px;
+      max-height: 82dvh;
+      overflow-y: auto;
+      text-align: center;
+      box-shadow: 0 8px 0 #cfd8dc, 0 16px 30px rgba(0,0,0,0.45);
+    }
+    .modal-title { font-size: 21px; font-weight: 900; color: #263238; margin-bottom: 6px; }
+    .modal-desc { font-size: 13px; color: #546e7a; margin-bottom: 14px; font-weight: 700; }
+    .modal-btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      margin-bottom: 9px;
+      color: #fff;
+    }
+    .btn-green { background: linear-gradient(180deg, #43a047, #2e7d32); box-shadow: 0 4px 0 #1b5e20; }
+    .btn-orange { background: linear-gradient(180deg, #ffa726, #f57c00); box-shadow: 0 4px 0 #e65100; }
+    .btn-red { background: linear-gradient(180deg, #ef5350, #c62828); box-shadow: 0 4px 0 #8e0000; }
+
+    .shop-section-title {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 900;
+      color: #37474f;
+      margin: 10px 0 6px;
+      text-transform: uppercase;
+    }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .shop-item {
+      background: #f5f7fa;
+      border: 2px solid #cfd8dc;
+      border-radius: 14px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .shop-item.equipped {
+      border-color: #2e7d32;
+      background: #e8f5e9;
+    }
+    .shop-item-icon { font-size: 24px; margin-bottom: 3px; }
+    .shop-item-name { font-size: 12px; font-weight: 900; color: #263238; }
+    .shop-item-sub { font-size: 10px; color: #607d8b; font-weight: 700; margin-bottom: 6px; }
+    .shop-buy-btn {
+      width: 100%;
+      padding: 6px;
+      border: none;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      background: #ff8f00;
+      box-shadow: 0 3px 0 #e65100;
+      cursor: pointer;
+    }
+    .shop-buy-btn.owned { background: #1e88e5; box-shadow: 0 3px 0 #0d47a1; }
+    .shop-buy-btn.active-skin { background: #2e7d32; box-shadow: 0 3px 0 #1b5e20; }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== 1. HOME / LEVEL SELECTION PAGE ==================== -->
+  <div id="homeScreen">
+    <div class="home-top-bar">
+      <div class="home-badge">🏆 Best: Level <span id="homeUnlockedText">1</span></div>
+      <div class="coin-box" onclick="openRedeemShop()">🪙 <span id="homeCoinCount">200</span></div>
+    </div>
+
+    <div class="hero-box">
+      <div class="hero-cars">🚗 🚌 🚕</div>
+      <div class="hero-title">CAR JAM SOLVER</div>
+      <div class="hero-sub">Traffic Jam 3D Puzzle</div>
+    </div>
+
+    <div class="home-actions">
+      <button class="play-main-btn" id="playMainBtn" onclick="playCurrentLevel()">
+        ▶ PLAY LEVEL 1
+      </button>
+      <button class="redeem-main-btn" onclick="openRedeemShop()">
+        🎁 REDEEM<br/>SHOP
+      </button>
+    </div>
+
+    <div class="levels-panel">
+      <div class="levels-header">🗺️ Select Level (1 - 100)</div>
+      <div class="levels-grid" id="levelsGrid"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. GAMEPLAY SCREEN ==================== -->
+  <div id="gameScreen">
+    <div class="hud" id="hudBar">
+      <div class="hud-left-group">
+        <button class="hud-btn" onclick="goHome()">🏠</button>
+        <button class="hud-btn" onclick="restartLevel()">🔄</button>
+      </div>
+      <div class="level-box">
+        <div class="level-title" id="levelTitle">Level 1</div>
+        <div class="level-sub" id="levelTheme">Sunny Town • Grid</div>
+      </div>
+      <div class="coin-box" onclick="openRedeemShop()">🪙 <span id="coinCount">200</span></div>
+    </div>
+
+    <!-- 3D PASSENGER QUEUE -->
+    <div class="queue-area">
+      <div class="queue-badge">👥 Passengers Left: <span id="paxCount">0</span></div>
+      <div class="station-track" id="passengerLine"></div>
+    </div>
+
+    <!-- 3D PARKING SLOTS -->
+    <div class="parking-road" id="parkingRoad"></div>
+
+    <!-- 3D TRAFFIC JAM BOARD -->
+    <div class="board-wrapper">
+      <div class="jam-board" id="jamBoard"></div>
+    </div>
+
+    <!-- BOOSTERS -->
+    <div class="boosters">
+      <button class="booster-btn" onclick="useUndo()">
+        <span class="booster-icon">↩️</span>
+        <span class="booster-label" id="undoLabel">Undo (2)</span>
+      </button>
+      <button class="booster-btn" onclick="useShuffle()">
+        <span class="booster-icon">🔀</span>
+        <span class="booster-label" id="shuffleLabel">Shuffle (2)</span>
+      </button>
+      <button class="booster-btn" onclick="useVipFill()">
+        <span class="booster-icon">⚡</span>
+        <span class="booster-label" id="vipLabel">VIP Fill (1)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ADMOB BANNER SPACER -->
+  <div class="admob-banner-bar" id="adBannerContainer"></div>
+
+  <!-- WIN / LOSE MODAL -->
+  <div class="modal-backdrop" id="gameModal">
+    <div class="modal-card">
+      <div class="modal-title" id="modalTitle">🎉 Level Cleared!</div>
+      <div class="modal-desc" id="modalDesc">You earned +60 Coins!</div>
+      <button class="modal-btn btn-orange" id="modalAdBtn">🎬 Claim 2x Coins (Watch Ad)</button>
+      <button class="modal-btn btn-green" id="modalPrimaryBtn">Next Level ➡</button>
+    </div>
+  </div>
+
+  <!-- COIN REDEEM SHOP MODAL -->
+  <div class="modal-backdrop" id="shopModal">
+    <div class="modal-card">
+      <div class="modal-title">🎁 Coin Redeem Shop</div>
+      <div class="modal-desc">Your Balance: 🪙 <strong id="shopCoinBalance">200</strong></div>
+
+      <div class="shop-section-title">🚘 Unlock 3D Vehicle Skins</div>
+      <div class="shop-grid" id="skinsShopGrid"></div>
+
+      <div class="shop-section-title">⚡ Redeem Power-Ups</div>
+      <div class="shop-grid" id="boostersShopGrid"></div>
+
+      <button class="modal-btn btn-red" onclick="closeShopModal()">✖ Close Shop</button>
+    </div>
+  </div>
+
+  <script>
+    /******************************************************************
+     * 1. YOUR LIVE ANDROID ADMOB IDS PLUGGED-IN
+     ******************************************************************/
+    const ADMOB_CONFIG = {
+      appId: 'ca-app-pub-3129876015229913~3734660947',
+      bannerId: 'ca-app-pub-3129876015229913/4532416496',
+      interstitialId: 'ca-app-pub-3129876015229913/6680213471',
+      rewardedId: 'ca-app-pub-3129876015229913/2740968466',
+    };
+
+    const AdManager = {
+      pendingRewardCallback: null,
+      getPlugin() {
+        return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMobPlus) || window.admob || null;
+      },
+      async init() {
+        const plugin = this.getPlugin();
+        if (!plugin) return;
+        try {
+          if (plugin.start) await plugin.start();
+          if (plugin.addListener) {
+            plugin.addListener('rewarded.reward', () => {
+              if (this.pendingRewardCallback) {
+                const cb = this.pendingRewardCallback;
+                this.pendingRewardCallback = null;
+                cb();
+              }
+            });
+          }
+          await this.showBanner();
+          await this.preloadInterstitial();
+          await this.preloadRewarded();
+        } catch (err) {}
+      },
+      async showBanner() {
+        const plugin = this.getPlugin();
+        if (!plugin) return;
+        try {
+          if (plugin.bannerShow) {
+            await plugin.bannerShow({ id: 1, adUnitId: ADMOB_CONFIG.bannerId, position: 'bottom' });
+          } else if (plugin.BannerAd) {
+            const banner = new plugin.BannerAd({ adUnitId: ADMOB_CONFIG.bannerId, position: 'bottom' });
+            await banner.show();
+          }
+        } catch (e) {}
+      },
+      async preloadInterstitial() {
+        const plugin = this.getPlugin();
+        if (!plugin) return;
+        try {
+          if (plugin.interstitialLoad) {
+            await plugin.interstitialLoad({ id: 2, adUnitId: ADMOB_CONFIG.interstitialId });
+          }
+        } catch (e) {}
+      },
+      async showInterstitial(callback) {
+        const plugin = this.getPlugin();
+        if (!plugin) {
+          if (callback) callback();
+          return;
+        }
+        try {
+          if (plugin.interstitialShow) {
+            await plugin.interstitialShow({ id: 2 });
+            this.preloadInterstitial();
+          } else if (plugin.InterstitialAd) {
+            const inter = new plugin.InterstitialAd({ adUnitId: ADMOB_CONFIG.interstitialId });
+            await inter.load();
+            await inter.show();
+          }
+        } catch (e) {
+          this.preloadInterstitial();
+        } finally {
+          if (callback) callback();
+        }
+      },
+      async preloadRewarded() {
+        const plugin = this.getPlugin();
+        if (!plugin) return;
+        try {
+          if (plugin.rewardedLoad) {
+            await plugin.rewardedLoad({ id: 3, adUnitId: ADMOB_CONFIG.rewardedId });
+          }
+        } catch (e) {}
+      },
+      async showRewarded(onRewardEarned) {
+        const plugin = this.getPlugin();
+        if (!plugin) {
+          setTimeout(() => onRewardEarned && onRewardEarned(), 250);
+          return;
+        }
+        try {
+          this.pendingRewardCallback = onRewardEarned;
+          if (plugin.rewardedShow) {
+            await plugin.rewardedShow({ id: 3 });
+            this.preloadRewarded();
+          } else if (plugin.RewardedAd) {
+            const rew = new plugin.RewardedAd({ adUnitId: ADMOB_CONFIG.rewardedId });
+            rew.on('reward', () => {
+              if (this.pendingRewardCallback) {
+                const cb = this.pendingRewardCallback;
+                this.pendingRewardCallback = null;
+                cb();
+              }
+            });
+            await rew.load();
+            await rew.show();
+          }
+        } catch (e) {
+          if (this.pendingRewardCallback) {
+            const cb = this.pendingRewardCallback;
+            this.pendingRewardCallback = null;
+            cb();
+          }
+          this.preloadRewarded();
+        }
+      }
+    };
+
+    /******************************************************************
+     * 2. SOUND EFFECTS
+     ******************************************************************/
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type = 'sine', duration = 0.12) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    /******************************************************************
+     * 3. VEHICLE SKINS, SHOP & VIBRANT COLORS
+     ******************************************************************/
+    const SKINS_CATALOG = [
+      { id: 'classic', name: 'Classic City', icon: '🚗', price: 0, stripe: false, goldTrim: false },
+      { id: 'racer', name: 'Sport Stripes', icon: '🏎️', price: 300, stripe: true, goldTrim: false },
+      { id: 'gold', name: 'Royal Gold Trim', icon: '👑', price: 700, stripe: false, goldTrim: true },
+      { id: 'cyber', name: 'Cyber Pro', icon: '🚀', price: 1200, stripe: true, goldTrim: true },
+    ];
+
+    const BOOSTER_PACKS = [
+      { id: 'undo', name: '+2 Undo', icon: '↩️', price: 150 },
+      { id: 'shuffle', name: '+2 Shuffle', icon: '🔀', price: 200 },
+      { id: 'vip', name: '+1 VIP Fill', icon: '⚡', price: 250 },
+      { id: 'combo', name: 'All Boosters +1', icon: '🎁', price: 400 },
+    ];
+
+    const CAR_COLORS = [
+      { main: '#FF3B30', light: '#FF8A80', dark: '#C62828', grad: 'linear-gradient(180deg, #ff6b6b 0%, #d63031 100%)' },
+      { main: '#00C853', light: '#69F0AE', dark: '#1B5E20', grad: 'linear-gradient(180deg, #55efc4 0%, #00b894 100%)' },
+      { main: '#2979FF', light: '#82B1FF', dark: '#0D47A1', grad: 'linear-gradient(180deg, #74b9ff 0%, #0984e3 100%)' },
+      { main: '#FFAB00', light: '#FFE57F', dark: '#E65100', grad: 'linear-gradient(180deg, #ffeaa7 0%, #f39c12 100%)' },
+      { main: '#AA00FF', light: '#EA80FC', dark: '#4A148C', grad: 'linear-gradient(180deg, #a29bfe 0%, #6c5ce7 100%)' },
+      { main: '#FF4081', light: '#FF80AB', dark: '#880E4F', grad: 'linear-gradient(180deg, #fd79a8 0%, #e84393 100%)' },
+    ];
+
+    const THEMES = [
+      { name: 'Sunny Town', bg: 'linear-gradient(180deg, #b3e5fc 0%, #e1f5fe 100%)', hud: 'linear-gradient(180deg, #43a047 0%, #2e7d32 100%)' },
+      { name: 'Coral Reef', bg: 'linear-gradient(180deg, #80deea 0%, #e0f7fa 100%)', hud: 'linear-gradient(180deg, #00acc1 0%, #00838f 100%)' },
+      { name: 'Amusement Park', bg: 'linear-gradient(180deg, #f8bbd0 0%, #fce4ec 100%)', hud: 'linear-gradient(180deg, #d81b60 0%, #ad1457 100%)' },
+      { name: 'Metro Station', bg: 'linear-gradient(180deg, #cfd8dc 0%, #eceff1 100%)', hud: 'linear-gradient(180deg, #546e7a 0%, #37474f 100%)' },
+    ];
+    const SHAPES = ['GRID', 'CIRCLE', 'HEART', 'DIAMOND'];
+    const ARROWS = { UP: '⬆', DOWN: '⬇', LEFT: '⬅', RIGHT: '➡' };
+
+    const savedUnlocked = parseInt(localStorage.getItem('cjs_level') || '1', 10);
+    const savedSkins = JSON.parse(localStorage.getItem('cjs_skins') || '["classic"]');
+    const savedEquipped = localStorage.getItem('cjs_equipped') || 'classic';
+
+    let state = {
+      unlockedLevel: savedUnlocked,
+      level: savedUnlocked,
+      coins: parseInt(localStorage.getItem('cjs_coins') || '200', 10),
+      ownedSkins: savedSkins,
+      equippedSkin: savedEquipped,
+      boosters: { undo: 2, shuffle: 2, vip: 1 },
+      vehicles: [],
+      queue: [],
+      slots: [null, null, null, null],
+      extraSlotUnlocked: false,
+      history: [],
+      isGameOver: true,
+      screen: 'HOME',
+    };
+
+    function saveProgress() {
+      localStorage.setItem('cjs_level', state.unlockedLevel);
+      localStorage.setItem('cjs_coins', state.coins);
+      localStorage.setItem('cjs_skins', JSON.stringify(state.ownedSkins));
+      localStorage.setItem('cjs_equipped', state.equippedSkin);
+    }
+
+    /******************************************************************
+     * 4. REAL TOP-DOWN 3D CAR & BUS SVG BUILDER (Fixed Bright Colors)
+     ******************************************************************/
+    function buildRealVehicleSVG(car, isBus) {
+      const skin = SKINS_CATALOG.find((s) => s.id === state.equippedSkin) || SKINS_CATALOG[0];
+      const strokeCol = skin.goldTrim ? '#FFD700' : '#FFFFFF';
+      const strokeW = skin.goldTrim ? '2.5' : '1.8';
+
+      if (isBus) {
+        return `
+          <svg viewBox="0 0 84 68" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tyres -->
+            <rect x="12" y="0" width="14" height="5" rx="2" style="fill:#1a1a1a"/>
+            <rect x="58" y="0" width="14" height="5" rx="2" style="fill:#1a1a1a"/>
+            <rect x="12" y="63" width="14" height="5" rx="2" style="fill:#1a1a1a"/>
+            <rect x="58" y="63" width="14" height="5" rx="2" style="fill:#1a1a1a"/>
+            <!-- Side Mirrors -->
+            <rect x="74" y="5" width="4" height="8" rx="2" style="fill:${car.dark}"/>
+            <rect x="74" y="55" width="4" height="8" rx="2" style="fill:${car.dark}"/>
+            <!-- Bright Bus Body -->
+            <rect x="4" y="4" width="76" height="60" rx="13" style="fill:${car.main}; stroke:${strokeCol}; stroke-width:${strokeW}"/>
+            <!-- Glossy Roof Highlight -->
+            <rect x="9" y="8" width="64" height="22" rx="8" style="fill:${car.light}; opacity:0.65"/>
+            <!-- Racing Stripe -->
+            ${skin.stripe ? `<rect x="6" y="31" width="72" height="6" style="fill:#ffffff; opacity:0.85"/>` : ''}
+            <!-- Front Panoramic Windshield -->
+            <rect x="64" y="10" width="11" height="48" rx="5" style="fill:#263238; stroke:#eceff1; stroke-width:1"/>
+            <!-- Rear Window -->
+            <rect x="7" y="14" width="6" height="40" rx="3" style="fill:#263238; opacity:0.85"/>
+            <!-- Roof AC Vents -->
+            <rect x="22" y="14" width="14" height="40" rx="4" style="fill:${car.light}; opacity:0.45; stroke:#ffffff; stroke-width:1"/>
+            <rect x="42" y="14" width="14" height="40" rx="4" style="fill:${car.light}; opacity:0.45; stroke:#ffffff; stroke-width:1"/>
+            <!-- Headlights & Taillights -->
+            <ellipse cx="78" cy="14" rx="2" ry="4" style="fill:#fff9c4"/>
+            <ellipse cx="78" cy="54" rx="2" ry="4" style="fill:#fff9c4"/>
+            <rect x="3" y="12" width="2.5" height="8" rx="1" style="fill:#ff1744"/>
+            <rect x="3" y="48" width="2.5" height="8" rx="1" style="fill:#ff1744"/>
+          </svg>
+        `;
+      } else {
+        return `
+          <svg viewBox="0 0 54 72" xmlns="http://www.w3.org/2000/svg">
+            <!-- 4 Tyres -->
+            <rect x="1" y="12" width="5" height="13" rx="2" style="fill:#1a1a1a"/>
+            <rect x="48" y="12" width="5" height="13" rx="2" style="fill:#1a1a1a"/>
+            <rect x="1" y="47" width="5" height="13" rx="2" style="fill:#1a1a1a"/>
+            <rect x="48" y="47" width="5" height="13" rx="2" style="fill:#1a1a1a"/>
+            <!-- Side Mirrors -->
+            <rect x="1" y="23" width="4" height="6" rx="1.5" style="fill:${car.dark}"/>
+            <rect x="49" y="23" width="4" height="6" rx="1.5" style="fill:${car.dark}"/>
+            <!-- Bright Car Body -->
+            <rect x="5" y="4" width="44" height="64" rx="15" style="fill:${car.main}; stroke:${strokeCol}; stroke-width:${strokeW}"/>
+            <!-- Glossy Hood / Bonnet -->
+            <rect x="10" y="7" width="34" height="15" rx="7" style="fill:${car.light}; opacity:0.65"/>
+            <!-- Racing Stripes -->
+            ${skin.stripe ? `<rect x="21" y="5" width="4" height="62" style="fill:#ffffff; opacity:0.85"/><rect x="29" y="5" width="4" height="62" style="fill:#ffffff; opacity:0.85"/>` : ''}
+            <!-- Front Windshield -->
+            <rect x="10" y="21" width="34" height="10" rx="4" style="fill:#263238; stroke:#eceff1; stroke-width:1"/>
+            <!-- Car Roof -->
+            <rect x="12" y="32" width="30" height="20" rx="6" style="fill:${car.light}; opacity:0.55; stroke:#ffffff; stroke-width:1"/>
+            <!-- Rear Windshield -->
+            <rect x="11" y="53" width="32" height="8" rx="3" style="fill:#263238; opacity:0.9"/>
+            <!-- Headlights -->
+            <ellipse cx="13" cy="6" rx="4" ry="2.2" style="fill:#fff9c4"/>
+            <ellipse cx="41" cy="6" rx="4" ry="2.2" style="fill:#fff9c4"/>
+            <!-- Rear Taillights -->
+            <rect x="10" y="65" width="9" height="2.5" rx="1" style="fill:#ff1744"/>
+            <rect x="35" y="65" width="9" height="2.5" rx="1" style="fill:#ff1744"/>
+          </svg>
+        `;
+      }
+    }
+
+    /******************************************************************
+     * 5. COIN REDEEM SHOP LOGIC
+     ******************************************************************/
+    function openRedeemShop() {
+      playTone(540, 'triangle', 0.12);
+      renderShopItems();
+      document.getElementById('shopModal').style.display = 'flex';
+    }
+
+    function closeShopModal() {
+      document.getElementById('shopModal').style.display = 'none';
+      if (state.screen === 'HOME') renderHomeScreen();
+      else renderAll();
+    }
+
+    function renderShopItems() {
+      document.getElementById('shopCoinBalance').innerText = state.coins;
+
+      const skinsGrid = document.getElementById('skinsShopGrid');
+      skinsGrid.innerHTML = '';
+      SKINS_CATALOG.forEach((skin) => {
+        const isOwned = state.ownedSkins.includes(skin.id);
+        const isEquipped = state.equippedSkin === skin.id;
+
+        const card = document.createElement('div');
+        card.className = 'shop-item' + (isEquipped ? ' equipped' : '');
+        card.innerHTML = `
+          <div class="shop-item-icon">${skin.icon}</div>
+          <div class="shop-item-name">${skin.name}</div>
+          <div class="shop-item-sub">${isOwned ? 'Unlocked' : `🪙 ${skin.price} Coins`}</div>
+          <button class="shop-buy-btn ${isEquipped ? 'active-skin' : isOwned ? 'owned' : ''}">
+            ${isEquipped ? '✅ EQUIPPED' : isOwned ? 'EQUIP' : `REDEEM (${skin.price})`}
+          </button>
+        `;
+        card.querySelector('button').onclick = () => {
+          if (isEquipped) return;
+          if (isOwned) {
+            state.equippedSkin = skin.id;
+            saveProgress();
+            playTone(620, 'sine', 0.12);
+            renderShopItems();
+          } else if (state.coins >= skin.price) {
+            state.coins -= skin.price;
+            state.ownedSkins.push(skin.id);
+            state.equippedSkin = skin.id;
+            saveProgress();
+            playTone(820, 'triangle', 0.25);
+            renderShopItems();
+          } else {
+            playTone(160, 'sawtooth', 0.2);
+            alert('Not enough coins! Clear more levels or watch 2x Coin ads.');
+          }
+        };
+        skinsGrid.appendChild(card);
+      });
+
+      const boostersGrid = document.getElementById('boostersShopGrid');
+      boostersGrid.innerHTML = '';
+      BOOSTER_PACKS.forEach((pack) => {
+        const card = document.createElement('div');
+        card.className = 'shop-item';
+        card.innerHTML = `
+          <div class="shop-item-icon">${pack.icon}</div>
+          <div class="shop-item-name">${pack.name}</div>
+          <div class="shop-item-sub">🪙 ${pack.price} Coins</div>
+          <button class="shop-buy-btn">REDEEM (${pack.price})</button>
+        `;
+        card.querySelector('button').onclick = () => {
+          if (state.coins < pack.price) {
+            playTone(160, 'sawtooth', 0.2);
+            alert('Not enough coins! Play levels to earn more coins.');
+            return;
+          }
+          state.coins -= pack.price;
+          if (pack.id === 'undo') state.boosters.undo += 2;
+          if (pack.id === 'shuffle') state.boosters.shuffle += 2;
+          if (pack.id === 'vip') state.boosters.vip += 1;
+          if (pack.id === 'combo') {
+            state.boosters.undo += 1;
+            state.boosters.shuffle += 1;
+            state.boosters.vip += 1;
+          }
+          saveProgress();
+          playTone(760, 'triangle', 0.2);
+          renderShopItems();
+        };
+        boostersGrid.appendChild(card);
+      });
+    }
+
+    /******************************************************************
+     * 6. HOME SCREEN & LEVEL SELECTOR LOGIC
+     ******************************************************************/
+    function renderHomeScreen() {
+      state.screen = 'HOME';
+      state.isGameOver = true;
+      document.getElementById('homeScreen').style.display = 'flex';
+      document.getElementById('gameScreen').style.display = 'none';
+
+      document.getElementById('homeCoinCount').innerText = state.coins;
+      document.getElementById('homeUnlockedText').innerText = state.unlockedLevel;
+      document.getElementById('playMainBtn').innerText = `▶ PLAY LEVEL ${state.unlockedLevel}`;
+
+      const grid = document.getElementById('levelsGrid');
+      grid.innerHTML = '';
+      const maxDisplayLevels = Math.max(100, state.unlockedLevel + 20);
+
+      for (let i = 1; i <= maxDisplayLevels; i++) {
+        const card = document.createElement('button');
+        const isCompleted = i < state.unlockedLevel;
+        const isCurrent = i === state.unlockedLevel;
+
+        card.className = 'lvl-card ' + (isCompleted ? 'completed' : isCurrent ? 'current' : 'locked');
+        card.innerHTML = `
+          <span>${i}</span>
+          <span class="lvl-status">${isCompleted ? '✅' : isCurrent ? '▶' : '🔒'}</span>
+        `;
+
+        if (i <= state.unlockedLevel) {
+          card.onclick = () => {
+            playTone(520, 'sine', 0.1);
+            startSelectedLevel(i);
+          };
+        } else {
+          card.onclick = () => playTone(160, 'sawtooth', 0.12);
+        }
+        grid.appendChild(card);
+      }
+    }
+
+    function playCurrentLevel() {
+      playTone(600, 'triangle', 0.15);
+      startSelectedLevel(state.unlockedLevel);
+    }
+
+    function startSelectedLevel(lvl) {
+      state.level = lvl;
+      state.screen = 'GAME';
+      document.getElementById('homeScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'flex';
+      generateLevel(lvl);
+    }
+
+    function goHome() {
+      playTone(400, 'sine', 0.1);
+      closeModal();
+      renderHomeScreen();
+    }
+
+    /******************************************************************
+     * 7. LEVEL GENERATOR & GAMEPLAY RENDERING
+     ******************************************************************/
+    function generateLevel(lvl) {
+      const theme = THEMES[Math.floor((lvl - 1) / 10) % THEMES.length];
+      const shape = lvl < 4 ? 'GRID' : SHAPES[(lvl - 1) % SHAPES.length];
+      const colorCount = Math.min(3 + Math.floor(lvl / 6), CAR_COLORS.length);
+      const activeColors = CAR_COLORS.slice(0, colorCount);
+      const totalVehicles = Math.min(10 + Math.floor(lvl * 1.3), 28);
+
+      const vehicles = [];
+      const queue = [];
+      const dirs = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+
+      for (let i = 0; i < totalVehicles; i++) {
+        const colorObj = activeColors[i % activeColors.length];
+        const capacity = i % 5 === 0 ? 6 : 4;
+        vehicles.push({
+          id: i,
+          color: colorObj.main,
+          light: colorObj.light,
+          dark: colorObj.dark,
+          grad: colorObj.grad,
+          capacity,
+          boarded: 0,
+          dir: dirs[(i + lvl) % 4],
+          parked: false,
+        });
+        for (let p = 0; p < capacity; p++) {
+          queue.push(colorObj);
+        }
+      }
+
+      for (let i = queue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        if (Math.abs(i - j) <= 6) {
+          [queue[i], queue[j]] = [queue[j], queue[i]];
+        }
+      }
+
+      document.body.style.background = theme.bg;
+      document.getElementById('hudBar').style.background = theme.hud;
+      document.getElementById('levelTitle').innerText = `Level ${lvl}`;
+      document.getElementById('levelTheme').innerText = `${theme.name} • ${shape}`;
+
+      const boardEl = document.getElementById('jamBoard');
+      boardEl.className = `jam-board ${shape}`;
+
+      state.vehicles = vehicles;
+      state.queue = queue;
+      state.slots = [null, null, null, null];
+      state.extraSlotUnlocked = false;
+      state.history = [];
+      state.isGameOver = false;
+
+      closeModal();
+      renderAll();
+    }
+
+    function renderAll() {
+      document.getElementById('coinCount').innerText = state.coins;
+      document.getElementById('paxCount').innerText = state.queue.length;
+      document.getElementById('undoLabel').innerText = `Undo (${state.boosters.undo > 0 ? state.boosters.undo : '🎬'})`;
+      document.getElementById('shuffleLabel').innerText = `Shuffle (${state.boosters.shuffle > 0 ? state.boosters.shuffle : '🎬'})`;
+      document.getElementById('vipLabel').innerText = `VIP Fill (${state.boosters.vip > 0 ? state.boosters.vip : '🎬'})`;
+
+      // Render 3D Stickmen
+      const lineEl = document.getElementById('passengerLine');
+      lineEl.innerHTML = '';
+      state.queue.slice(0, 12).forEach((colorObj, idx) => {
+        const man = document.createElement('div');
+        man.className = 'stickman' + (idx === 0 ? ' front' : '');
+        man.innerHTML = `
+          <div class="stickman-head"></div>
+          <div class="stickman-body" style="background:${colorObj.grad}"></div>
+        `;
+        lineEl.appendChild(man);
+      });
+
+      // Render Real 3D Parked Vehicles in Slots
+      const roadEl = document.getElementById('parkingRoad');
+      roadEl.innerHTML = '';
+      state.slots.forEach((car, idx) => {
+        const slotDiv = document.createElement('div');
+        slotDiv.className = 'slot';
+        if (car) {
+          const isBus = car.capacity > 4;
+          const pCar = document.createElement('div');
+          pCar.className = 'real-vehicle parked-anim';
+          pCar.style.width = '44px';
+          pCar.style.height = '62px';
+          pCar.innerHTML = `
+            ${buildRealVehicleSVG(car, false)}
+            <div class="veh-badge">
+              <span class="veh-arrow">${isBus ? '🚌' : '🚘'}</span>
+              <span class="veh-cap">${car.boarded}/${car.capacity}</span>
+            </div>
+          `;
+          slotDiv.appendChild(pCar);
+        } else {
+          slotDiv.innerText = `P${idx + 1}`;
+        }
+        roadEl.appendChild(slotDiv);
+      });
+
+      if (!state.extraSlotUnlocked) {
+        const unlockDiv = document.createElement('div');
+        unlockDiv.className = 'slot unlock-btn';
+        unlockDiv.innerHTML = `<span>+ 🎬</span><span>FREE</span>`;
+        unlockDiv.onclick = () => {
+          AdManager.showRewarded(() => {
+            state.extraSlotUnlocked = true;
+            state.slots.push(null);
+            playTone(620, 'triangle', 0.2);
+            renderAll();
+          });
+        };
+        roadEl.appendChild(unlockDiv);
+      }
+
+      // Render Real 3D Cars & Buses on Traffic Jam Board
+      const boardEl = document.getElementById('jamBoard');
+      boardEl.innerHTML = '';
+      state.vehicles
+        .filter((v) => !v.parked)
+        .slice(0, 15)
+        .forEach((car) => {
+          const isBus = car.capacity > 4;
+          const btn = document.createElement('div');
+          btn.className = 'real-vehicle';
+          btn.style.width = isBus ? '76px' : '50px';
+          btn.style.height = isBus ? '62px' : '64px';
+          btn.innerHTML = `
+            ${buildRealVehicleSVG(car, isBus)}
+            <div class="veh-badge">
+              <span class="veh-arrow">${ARROWS[car.dir]}</span>
+              <span class="veh-cap">${car.capacity}</span>
+            </div>
+          `;
+          btn.onclick = () => handleVehicleTap(car.id);
+          boardEl.appendChild(btn);
+        });
+    }
+
+    function handleVehicleTap(carId) {
+      if (state.isGameOver || state.screen !== 'GAME') return;
+      const emptyIdx = state.slots.findIndex((s) => s === null);
+      if (emptyIdx === -1) {
+        playTone(150, 'sawtooth', 0.2);
+        return;
+      }
+
+      const car = state.vehicles.find((v) => v.id === carId);
+      if (!car || car.parked) return;
+
+      playTone(440, 'sine', 0.1);
+      car.parked = true;
+      state.slots[emptyIdx] = car;
+      state.history.push({ carId: car.id, slotIdx: emptyIdx });
+      renderAll();
+    }
+
+    setInterval(() => {
+      if (state.isGameOver || state.screen !== 'GAME') return;
+
+      if (state.queue.length === 0) {
+        state.isGameOver = true;
+        const reward = 50 + state.level * 10;
+        state.coins += reward;
+        if (state.level >= state.unlockedLevel) {
+          state.unlockedLevel = state.level + 1;
+        }
+        saveProgress();
+        playTone(780, 'triangle', 0.35);
+
+        openModal(
+          `🎉 Level ${state.level} Cleared!`,
+          `You earned +${reward} Coins!`,
+          `🎬 Claim 2x Coins (+${reward})`,
+          () => {
+            AdManager.showRewarded(() => {
+              state.coins += reward;
+              state.level++;
+              saveProgress();
+              generateLevel(state.level);
+            });
+          },
+          'Next Level ➡',
+          () => {
+            const goNext = () => {
+              state.level++;
+              generateLevel(state.level);
+            };
+            if (state.level % 2 === 0) {
+              AdManager.showInterstitial(goNext);
+            } else {
+              goNext();
+            }
+          }
+        );
+        return;
+      }
+
+      const frontColor = state.queue[0].main;
+      const matchIdx = state.slots.findIndex(
+        (c) => c && c.color === frontColor && c.boarded < c.capacity
+      );
+
+      if (matchIdx !== -1) {
+        const car = state.slots[matchIdx];
+        car.boarded++;
+        state.queue.shift();
+        playTone(580 + car.boarded * 40, 'sine', 0.08);
+
+        if (car.boarded >= car.capacity) {
+          state.slots[matchIdx] = null;
+          playTone(880, 'triangle', 0.15);
+        }
+        renderAll();
+      } else {
+        const allFull = state.slots.every((s) => s !== null);
+        if (allFull) {
+          state.isGameOver = true;
+          playTone(180, 'sawtooth', 0.35);
+          openModal(
+            '🚦 Traffic Jammed!',
+            'All parking slots are full!',
+            '🎬 Clear 1 Slot (Watch Ad)',
+            () => {
+              AdManager.showRewarded(() => {
+                const firstCar = state.slots[0];
+                if (firstCar) {
+                  firstCar.parked = false;
+                  state.slots[0] = null;
+                }
+                state.isGameOver = false;
+                closeModal();
+                renderAll();
+              });
+            },
+            'Restart Level 🔄',
+            () => {
+              AdManager.showInterstitial(() => generateLevel(state.level));
+            }
+          );
+        }
+      }
+    }, 220);
+
+    /******************************************************************
+     * 8. POWER-UP BUTTONS
+     ******************************************************************/
+    function useUndo() {
+      if (state.boosters.undo <= 0) {
+        return AdManager.showRewarded(() => {
+          state.boosters.undo++;
+          renderAll();
+        });
+      }
+      if (!state.history.length) return;
+      const last = state.history.pop();
+      const parkedCar = state.slots[last.slotIdx];
+      if (!parkedCar) return;
+
+      state.boosters.undo--;
+      parkedCar.parked = false;
+      state.slots[last.slotIdx] = null;
+      playTone(360, 'sine', 0.12);
+      renderAll();
+    }
+
+    function useShuffle() {
+      if (state.boosters.shuffle <= 0) {
+        return AdManager.showRewarded(() => {
+          state.boosters.shuffle++;
+          renderAll();
+        });
+      }
+      state.boosters.shuffle--;
+      const unparked = state.vehicles.filter((v) => !v.parked);
+      const palettes = unparked.map((v) => ({
+        color: v.color, light: v.light, dark: v.dark, grad: v.grad
+      })).sort(() => Math.random() - 0.5);
+
+      unparked.forEach((v, i) => {
+        v.color = palettes[i].color;
+        v.light = palettes[i].light;
+        v.dark = palettes[i].dark;
+        v.grad = palettes[i].grad;
+      });
+      playTone(520, 'triangle', 0.18);
+      renderAll();
+    }
+
+    function useVipFill() {
+      if (state.boosters.vip <= 0) {
+        return AdManager.showRewarded(() => {
+          state.boosters.vip++;
+          renderAll();
+        });
+      }
+      const slotIdx = state.slots.findIndex((s) => s !== null);
+      if (slotIdx === -1) return;
+
+      const car = state.slots[slotIdx];
+      let needed = car.capacity - car.boarded;
+      state.boosters.vip--;
+
+      state.queue = state.queue.filter((c) => {
+        if (c.main === car.color && needed > 0) {
+          needed--;
+          return false;
+        }
+        return true;
+      });
+      state.slots[slotIdx] = null;
+      playTone(840, 'triangle', 0.25);
+      renderAll();
+    }
+
+    function restartLevel() {
+      generateLevel(state.level);
+    }
+
+    function openModal(title, desc, adBtnText, onAdClick, primaryBtnText, onPrimaryClick) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalDesc').innerText = desc;
+      const adBtn = document.getElementById('modalAdBtn');
+      const priBtn = document.getElementById('modalPrimaryBtn');
+      adBtn.innerText = adBtnText;
+      adBtn.onclick = onAdClick;
+      priBtn.innerText = primaryBtnText;
+      priBtn.onclick = onPrimaryClick;
+      document.getElementById('gameModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('gameModal').style.display = 'none';
+    }
+
+    document.addEventListener('deviceready', () => AdManager.init(), false);
+    window.addEventListener('load', () => AdManager.init());
+    renderHomeScreen();
+  </script>
+</body>
+</html>

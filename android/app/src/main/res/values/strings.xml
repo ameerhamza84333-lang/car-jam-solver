@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Car Jam Solver: Traffic Jam</string>
+    <string name="title_activity_main">Car Jam Solver: Traffic Jam</string>
+    <string name="package_name">com.ameerhamza.carjamsolver</string>
+    <string name="custom_url_scheme">com.ameerhamza.carjamsolver</string>
+</resources>
