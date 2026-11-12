@@ -1,27 +1,47 @@
-buildscript {
-    ext {
-        kotlin_version = '2.0.21'
-    }
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
-        classpath 'com.google.gms:google-services:4.4.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
+name: Build Signed Android APK
 
-apply from: "variables.gradle"
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Dependencies & Sync Capacitor
+        run: |
+          npm install
+          npx cap sync android
+
+      - name: Build & Sign Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+          keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias -storepass 123456 -keypass 123456 -dname "CN=Ameer Hamza, OU=Dev, O=HamzaYT, L=Agra, S=UP, C=IN"
+          RAW_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          $ZIPALIGN -f -p 4 "$RAW_APK" app/build/outputs/apk/release/aligned.apk
+          $APKSIGNER sign --ks release-key.jks --ks-key-alias my-key-alias --ks-pass pass:123456 --key-pass pass:123456 --out app/build/outputs/apk/release/CarJamSolver-signed.apk app/build/outputs/apk/release/aligned.apk
+
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarJamSolver-Signed-APK
+          path: android/app/build/outputs/apk/release/CarJamSolver-signed.apk
