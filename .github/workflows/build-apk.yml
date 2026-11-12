@@ -12,16 +12,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Setup Java 17
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Dependencies & Sync Capacitor
         run: |
@@ -34,8 +34,12 @@ jobs:
           chmod +x gradlew
           keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias -storepass 123456 -keypass 123456 -dname "CN=Ameer Hamza, OU=Dev, O=HamzaYT, L=Agra, S=UP, C=IN"
           ./gradlew assembleRelease
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release-key.jks -storepass 123456 -keypass 123456 app/build/outputs/apk/release/app-release-unsigned.apk my-key-alias
-          $ANDROID_HOME/build-tools/34.0.0/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/CarJamSolver-signed.apk
+          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          SIGNED_APK="app/build/outputs/apk/release/CarJamSolver-signed.apk"
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
+          $ZIPALIGN -v -p 4 "$UNSIGNED_APK" app/build/outputs/apk/release/aligned.apk
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          $APKSIGNER sign --ks release-key.jks --ks-key-alias my-key-alias --ks-pass pass:123456 --key-pass pass:123456 --out "$SIGNED_APK" app/build/outputs/apk/release/aligned.apk
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
