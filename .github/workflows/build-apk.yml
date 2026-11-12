@@ -28,18 +28,17 @@ jobs:
           npm install
           npx cap sync android
 
-      - name: Generate Keystore & Build Signed APK
+      - name: Build & Sign Android APK
         run: |
           cd android
           chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
           keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias -storepass 123456 -keypass 123456 -dname "CN=Ameer Hamza, OU=Dev, O=HamzaYT, L=Agra, S=UP, C=IN"
-          ./gradlew assembleRelease
-          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
-          SIGNED_APK="app/build/outputs/apk/release/CarJamSolver-signed.apk"
+          RAW_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
-          $ZIPALIGN -v -p 4 "$UNSIGNED_APK" app/build/outputs/apk/release/aligned.apk
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
-          $APKSIGNER sign --ks release-key.jks --ks-key-alias my-key-alias --ks-pass pass:123456 --key-pass pass:123456 --out "$SIGNED_APK" app/build/outputs/apk/release/aligned.apk
+          $ZIPALIGN -f -p 4 "$RAW_APK" app/build/outputs/apk/release/aligned.apk
+          $APKSIGNER sign --ks release-key.jks --ks-key-alias my-key-alias --ks-pass pass:123456 --key-pass pass:123456 --out app/build/outputs/apk/release/CarJamSolver-signed.apk app/build/outputs/apk/release/aligned.apk
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
